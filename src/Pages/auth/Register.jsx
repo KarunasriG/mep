@@ -4,13 +4,15 @@ import { useAuth } from "./../../context/AuthContext";
 import { motion } from "motion/react";
 import { User, Phone, Lock, ArrowRight, Zap } from "lucide-react";
 import toast from "react-hot-toast";
+import { validateRegister } from "../../utils/validation.js";
+import { registerUser } from "../../services/auth.service";
 
 export default function Register() {
   const {
-    name,
-    setName,
-    mobile,
-    setMobile,
+    username,
+    setUsername,
+    mobileNumber,
+    setMobileNumber,
     password,
     setPassword,
     setIsLogin,
@@ -18,59 +20,39 @@ export default function Register() {
 
   const navigate = useNavigate();
 
-  const [errors, setErrors] = useState({
-    name: "",
-    mobile: "",
-    password: "",
-  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const validate = () => {
-    let temp = { name: "", mobile: "", password: "" };
-    let isValid = true;
-
-    // Name
-    if (!name.trim()) {
-      temp.name = "Name cannot be empty.";
-      isValid = false;
-    } else if (name.trim().length < 3) {
-      temp.name = "Name must be at least 3 characters.";
-      isValid = false;
-    }
-
-    // Mobile
-    if (!mobile.trim()) {
-      temp.mobile = "Mobile number is required.";
-      isValid = false;
-    } else if (!/^[0-9]{10}$/.test(mobile)) {
-      temp.mobile = "Enter a valid 10-digit number.";
-      isValid = false;
-    }
-
-    // Password
-    if (!password) {
-      temp.password = "Password is required.";
-      isValid = false;
-    } else if (password.length < 6) {
-      temp.password = "Password must be at least 6 characters.";
-      isValid = false;
-    }
-
-    setErrors(temp);
-    return isValid;
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validate()) return;
-    // Save to localStorage
-    localStorage.setItem("reg_name", name.trim());
-    localStorage.setItem("reg_mobile", mobile.trim());
-    localStorage.setItem("reg_password", password);
+    const { isValid, errors } = validateRegister({
+      username,
+      mobileNumber,
+      password,
+    });
+    console.log("Validation :  ", errors, isValid);
 
-    setIsLogin(false);
-    toast.success("Registration successful! Redirecting...");
-    navigate("/login");
+    setErrors(errors);
+    if (!isValid) return;
+    setLoading(true);
+
+    // Save to localStorage
+    // localStorage.setItem("reg_name", name.trim());
+    // localStorage.setItem("reg_mobile", mobile.trim());
+    // localStorage.setItem("reg_password", password);
+
+    try {
+      await registerUser({ username: username.trim(), mobileNumber, password });
+
+      toast.success("Registration successful! Redirecting...");
+      navigate("/login");
+    } catch (error) {
+      toast.error(error.message);
+      return;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -134,20 +116,20 @@ export default function Register() {
           <InputField
             label="Full Name"
             icon={<User />}
-            value={name}
-            onChange={setName}
-            error={errors.name}
+            value={username}
+            onChange={setUsername}
+            error={errors.username}
           />
 
           {/* Mobile Number */}
           <InputField
             label="Mobile Number"
             icon={<Phone />}
-            value={mobile}
-            onChange={setMobile}
+            value={mobileNumber}
+            onChange={setMobileNumber}
             maxLength={10}
             type="tel"
-            error={errors.mobile}
+            error={errors.mobileNumber}
           />
 
           {/* Password */}
@@ -168,6 +150,7 @@ export default function Register() {
             className="space-y-3 pt-2"
           >
             <motion.button
+              disabled={loading}
               type="submit"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -178,7 +161,8 @@ text-sm sm:text-base
               border-2 border-red-600 
               focus:outline-none focus:ring-2 focus:ring-red-500`}
             >
-              Sign Up <ArrowRight className="w-5 h-5" />
+              {loading ? "Creating Account..." : "Sign Up"}{" "}
+              <ArrowRight className="w-5 h-5" />
             </motion.button>
 
             <button

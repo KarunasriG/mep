@@ -4,27 +4,42 @@ import { useAuth } from "./../../context/AuthContext";
 import { motion } from "motion/react";
 import { Phone, Lock, ArrowRight, Zap } from "lucide-react";
 import toast from "react-hot-toast";
+import { validateLogin } from "../../utils/validation.js";
+import { loginUser } from "../../services/auth.service.js";
 
 export default function Login() {
-  const { mobile, setMobile, password, setPassword, setIsLogin } = useAuth();
+  const { mobileNumber, setMobileNumber, password, setPassword, setIsLogin } =
+    useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
 
-    const savedMobile = localStorage.getItem("reg_mobile");
-    const savedPassword = localStorage.getItem("reg_password");
+    const { isValid, errors } = validateLogin({ mobileNumber, password });
 
-    if (mobile !== savedMobile || password !== savedPassword) {
-      setError("Invalid mobile number or password.");
+    setErrors(errors);
+
+    if (!isValid) return;
+
+    setLoading(true);
+
+    try {
+      await loginUser({ mobileNumber, password });
+
+      setIsLogin(true);
+      toast.success("Login successful!");
+      navigate("/bulls");
+    } catch (error) {
+      toast.error(error.message);
       return;
+    } finally {
+      setLoading(false);
     }
 
-    setIsLogin(true);
-    toast.success("Login successful!");
-    navigate("/bulls");
+    // const savedMobile = localStorage.getItem("reg_mobile");
+    // const savedPassword = localStorage.getItem("reg_password");
   };
 
   return (
@@ -97,8 +112,8 @@ export default function Login() {
                 whileFocus={{ scale: 1.02 }}
                 type="tel"
                 maxLength={10}
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
                 className="
                   w-full
                   pl-11
@@ -112,6 +127,9 @@ export default function Login() {
                 "
               />
             </div>
+            {errors.mobileNumber && (
+              <p className="text-red-400 text-sm mt-1">{errors.mobileNumber}</p>
+            )}
           </div>
 
           {/* PASSWORD */}
@@ -137,9 +155,10 @@ export default function Login() {
                 "
               />
             </div>
+            {errors.password && (
+              <p className="text-red-400 text-sm mt-1">{errors.password}</p>
+            )}
           </div>
-
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
           {/* SUBMIT */}
           <motion.div
@@ -155,6 +174,7 @@ export default function Login() {
               }}
               whileTap={{ scale: 0.98 }}
               type="submit"
+              disabled={loading}
               className="
                 w-full
                 flex items-center justify-center gap-2
@@ -167,7 +187,8 @@ export default function Login() {
                 transition
               "
             >
-              Login <ArrowRight className="w-4 h-4" />
+              {loading ? "Logging in..." : "Login"}{" "}
+              <ArrowRight className="w-4 h-4" />
             </motion.button>
 
             <button

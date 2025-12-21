@@ -3,14 +3,14 @@ import { createContext, useContext, useState } from "react";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
+  const [username, setUsername] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(false);
 
   const reset = () => {
-    setName("");
-    setMobile("");
+    setUsername("");
+    setMobileNumber("");
     setPassword("");
     setIsLogin(false);
   };
@@ -18,11 +18,11 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider
       value={{
-        name,
-        setName,
+        username,
+        setUsername,
 
-        mobile,
-        setMobile,
+        mobileNumber,
+        setMobileNumber,
 
         password,
         setPassword,

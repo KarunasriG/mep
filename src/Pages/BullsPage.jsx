@@ -8,6 +8,7 @@ const BullsPage = () => {
   const [expanded, setExpanded] = useState(null);
   const [teams, setTeams] = useState([
     {
+      id: 1,
       teamName: "Thunder Bulls",
       ownerName: "Rajesh Kumar",
       bulls: [
@@ -19,6 +20,7 @@ const BullsPage = () => {
       totalMembers: 5,
     },
     {
+      id: 2,
       teamName: "Mighty Warriors",
       ownerName: "Suresh Reddy",
       bulls: [{ name: "Bull X", category: "senior" }],
@@ -26,6 +28,7 @@ const BullsPage = () => {
       totalMembers: 3,
     },
     {
+      id: 3,
       teamName: "Power Bulls",
       ownerName: "Krishna Murthy",
       bulls: [
@@ -69,43 +72,43 @@ const BullsPage = () => {
           </thead>
 
           <tbody className="divide-y">
-            {teams.map((team, i) => (
-              <>
-                <tr key={i}>
-                  <td className="px-4 py-3 font-medium">{team.teamName}</td>
-                  <td className="px-4 py-3">{team.ownerName}</td>
-                  <td className="px-4 py-3">{team.bulls.length}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => setExpanded(expanded === i ? null : i)}
-                      className="text-orange-600 font-medium"
-                    >
-                      {expanded === i ? "Hide" : "View"}
-                    </button>
+            {teams.map((team) => [
+              <tr key={team.id}>
+                <td className="px-4 py-3 font-medium">{team.teamName}</td>
+                <td className="px-4 py-3">{team.ownerName}</td>
+                <td className="px-4 py-3">{team.bulls.length}</td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={() =>
+                      setExpanded(expanded === team.id ? null : team.id)
+                    }
+                    className="text-orange-600 font-medium"
+                  >
+                    {expanded === team.id ? "Hide" : "View"}
+                  </button>
+                </td>
+              </tr>,
+
+              expanded === team.id && (
+                <tr key={`${team.id}-expanded`}>
+                  <td colSpan="4" className="bg-gray-50 px-6 py-4">
+                    <ul className="space-y-2">
+                      {team.bulls.map((b, idx) => (
+                        <li
+                          key={idx}
+                          className="flex justify-between border rounded-lg px-4 py-2"
+                        >
+                          <span>{b.name}</span>
+                          <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                            {b.category}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </td>
                 </tr>
-
-                {expanded === i && (
-                  <tr>
-                    <td colSpan="4" className="bg-gray-50 px-6 py-4">
-                      <ul className="space-y-2">
-                        {team.bulls.map((b, idx) => (
-                          <li
-                            key={idx}
-                            className="flex justify-between border rounded-lg px-4 py-2"
-                          >
-                            <span>{b.name}</span>
-                            <span className="text-xs bg-gray-200 px-2 py-1 rounded">
-                              {b.category}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                  </tr>
-                )}
-              </>
-            ))}
+              ),
+            ])}
           </tbody>
         </table>
       </div>
