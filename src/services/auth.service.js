@@ -31,3 +31,12 @@ export async function loginUser(data) {
     throw new Error(message);
   }
 }
+
+export async function verifyUserAPI() {
+  try {
+    const response = await loginAPI();
+    return response.data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+}

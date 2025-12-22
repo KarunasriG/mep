@@ -1,45 +1,44 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { motion } from "motion/react";
 import { Phone, Lock, ArrowRight, Zap } from "lucide-react";
 import toast from "react-hot-toast";
-import { validateLogin } from "../../utils/validation.js";
-import { loginUser } from "../../services/auth.service.js";
+import { validateLogin } from "../../utils/validation";
+import { loginUser } from "../../services/auth.service";
 
 export default function Login() {
-  const { mobileNumber, setMobileNumber, password, setPassword, setIsLogin } =
-    useAuth();
-  const navigate = useNavigate();
-  const [errors, setErrors] = useState("");
+  //  LOCAL FORM STATE
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const { checkAuth } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const { isValid, errors } = validateLogin({ mobileNumber, password });
-
     setErrors(errors);
-
     if (!isValid) return;
 
-    setLoading(true);
-
     try {
+      setLoading(true);
+
       await loginUser({ mobileNumber, password });
 
-      setIsLogin(true);
-      toast.success("Login successful!");
+      // VERIFY SESSION FROM BACKEND
+      await checkAuth();
+
+      toast.success("Login successful");
       navigate("/bulls");
-    } catch (error) {
-      toast.error(error.message);
-      return;
+    } catch (err) {
+      toast.error(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
-
-    // const savedMobile = localStorage.getItem("reg_mobile");
-    // const savedPassword = localStorage.getItem("reg_password");
   };
 
   return (

@@ -1,27 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "./../../context/AuthContext";
 import { motion } from "motion/react";
 import { User, Phone, Lock, ArrowRight, Zap } from "lucide-react";
 import toast from "react-hot-toast";
-import { validateRegister } from "../../utils/validation.js";
+import { validateRegister } from "../../utils/validation";
 import { registerUser } from "../../services/auth.service";
 
 export default function Register() {
-  const {
-    username,
-    setUsername,
-    mobileNumber,
-    setMobileNumber,
-    password,
-    setPassword,
-    setIsLogin,
-  } = useAuth();
-
-  const navigate = useNavigate();
+  // LOCAL FORM STATE (CORRECT)
+  const [username, setUsername] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [password, setPassword] = useState("");
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,25 +25,23 @@ export default function Register() {
       mobileNumber,
       password,
     });
-    console.log("Validation :  ", errors, isValid);
 
     setErrors(errors);
     if (!isValid) return;
-    setLoading(true);
-
-    // Save to localStorage
-    // localStorage.setItem("reg_name", name.trim());
-    // localStorage.setItem("reg_mobile", mobile.trim());
-    // localStorage.setItem("reg_password", password);
 
     try {
-      await registerUser({ username: username.trim(), mobileNumber, password });
+      setLoading(true);
 
-      toast.success("Registration successful! Redirecting...");
+      await registerUser({
+        username: username.trim(),
+        mobileNumber,
+        password,
+      });
+
+      toast.success("Registration successful");
       navigate("/login");
-    } catch (error) {
-      toast.error(error.message);
-      return;
+    } catch (err) {
+      toast.error(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -121,7 +113,6 @@ export default function Register() {
             error={errors.username}
           />
 
-          {/* Mobile Number */}
           <InputField
             label="Mobile Number"
             icon={<Phone />}
@@ -132,7 +123,6 @@ export default function Register() {
             error={errors.mobileNumber}
           />
 
-          {/* Password */}
           <InputField
             label="Password"
             icon={<Lock />}
@@ -178,14 +168,14 @@ text-sm sm:text-base
   );
 }
 
-/* Reusable Input Component */
+/* ---------------- Reusable Input ---------------- */
+
 function InputField({
   label,
   icon,
   value,
   onChange,
   type = "text",
-  autoComplete = "off",
   maxLength,
   error,
 }) {

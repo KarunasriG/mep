@@ -1,18 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "./../../context/AuthContext";
 import { motion } from "motion/react";
 import { ArrowRight, Zap } from "lucide-react";
-import { useEffect } from "react";
 
 export default function Choice() {
   const navigate = useNavigate();
-  const { reset } = useAuth();
-
-  // Clear old data when entering home
-  // reset();
-  useEffect(() => {
-    reset();
-  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gray-100">

@@ -7,6 +7,11 @@ import {
 } from "react-router-dom";
 import { useState, useEffect } from "react";
 
+import Login from "./Pages/auth/Login";
+import Register from "./Pages/auth/Register";
+import Choice from "./pages/auth/Choice";
+
+import HomePage from "./Pages/HomePage";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
 
@@ -16,12 +21,6 @@ import TeamsPage from "./Pages/TeamsPage";
 import BullsPage from "./Pages/BullsPage";
 import TeamDetailsPage from "./Pages/TeamDetailsPage";
 import DriversPage from "./Pages/DriversPage";
-
-import Choice from "./pages/auth/Choice";
-import Login from "./Pages/auth/Login";
-import Register from "./Pages/auth/Register";
-
-import HomePage from "./Pages/HomePage";
 
 // admin pages
 import Dashboard from "./admin/pages/DashboardLayout";
@@ -33,6 +32,7 @@ import TeamDetails from "./admin/components/ActiveTeams/TeamDetails";
 import Home from "./admin/pages/HomePage";
 
 import { useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { ShimmerTable } from "./components/ShimmerEffect";
@@ -80,7 +80,14 @@ function UserLayout({ children, mobileMenuOpen, setMobileMenuOpen }) {
 function AdminRoutes() {
   return (
     <Routes>
-      <Route path="/admin" element={<Dashboard />}>
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <Dashboard />{" "}
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Navigate to="home" replace />} />
         <Route path="users" element={<UserApprovals />} />
         <Route path="events" element={<EventManagement />} />
