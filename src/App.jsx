@@ -170,7 +170,11 @@ function AppContent() {
             />
             <Route
               path="/profile"
-              element={<ProfilePage loading={loading} />}
+              element={
+                <ProtectedRoute>
+                  <ProfilePage loading={loading} />
+                </ProtectedRoute>
+              }
             />
           </Routes>
         </UserLayout>

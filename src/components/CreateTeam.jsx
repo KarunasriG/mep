@@ -106,8 +106,8 @@ const CreateTeam = ({ onSubmit, onCancel }) => {
     setLoading(true);
     setError("");
     try {
-      console.log("Payload:");
-      console.log(payload);
+      // console.log("Payload:");
+      // console.log(payload);
 
       const result = await createTeam(payload);
       // On success, perhaps reset form or call onSubmit

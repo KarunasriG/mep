@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getUserTeamsApi, updateTeamApi } from "../api/team.api";
-import { forgotPasswordAPI } from "../api/auth.api";
+import { getUserTeamsApi } from "../api/team.api";
+import { changePasswordAPI } from "../api/auth.api";
+import { logoutUser } from "../services/auth.service";
 import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
@@ -9,8 +10,14 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [changePasswordData, setChangePasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -28,111 +35,310 @@ const ProfilePage = () => {
     fetchTeam();
   }, []);
 
-  const handleSave = async () => {
-    if (!team) return;
-    setSaving(true);
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+      setMessage("New passwords don't match");
+      return;
+    }
+
+    if (changePasswordData.newPassword.length < 8) {
+      setMessage("New password must be at least 8 characters long");
+      return;
+    }
+
+    setChangingPassword(true);
+    setMessage("");
+
     try {
-      await updateTeamApi(team._id, team);
-      setMessage("Team updated successfully");
+      await changePasswordAPI({
+        currentPassword: changePasswordData.currentPassword,
+        newPassword: changePasswordData.newPassword,
+      });
+      setMessage("Password changed successfully!");
+      setChangePasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setShowChangePassword(false);
     } catch (err) {
-      console.error("Failed to update team", err);
-      setMessage("Failed to update team");
+      console.error("Failed to change password", err);
+      setMessage(err.response?.data?.message || "Failed to change password");
     } finally {
-      setSaving(false);
+      setChangingPassword(false);
     }
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
-  const handleForgotPassword = async () => {
-    if (!user?.email) return;
     try {
-      await forgotPasswordAPI(user.email);
-      setMessage("Password reset email sent");
-    } catch (err) {
-      console.error("Failed to send reset email", err);
-      setMessage("Failed to send reset email");
+      const res = await logoutUser();
+      console.log(res);
+      logout(); // Clear user state in AuthContext
+      // Dispatch logout event for any other listeners
+      window.dispatchEvent(new CustomEvent("auth-logout"));
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Even if logout fails, clear state and redirect
+      logout();
+      window.dispatchEvent(new CustomEvent("auth-logout"));
+      navigate("/login");
     }
   };
 
-  const updateBull = (field, value) => {
-    setTeam((prev) => ({
-      ...prev,
-      bulls: prev.bulls.map((bull, idx) =>
-        idx === 0 ? { ...bull, [field]: value } : bull
-      ),
-    }));
-  };
-
-  const updateMember = (idx, field, value) => {
-    setTeam((prev) => ({
-      ...prev,
-      members: prev.members.map((member, i) =>
-        i === idx ? { ...member, [field]: value } : member
-      ),
-    }));
-  };
-
-  if (loading) return <div>Loading...</div>;
-  if (!team) return <div>No team found</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="profile-page">
-      <h1>Profile</h1>
-      <div className="bull-section">
-        <h2>Bull Details</h2>
-        <input
-          type="text"
-          value={team.bulls[0]?.name || ""}
-          onChange={(e) => updateBull("name", e.target.value)}
-          placeholder="Bull Name"
-        />
-        {/* Add category if needed */}
-      </div>
-      <div className="members-section">
-        <h2>Team Members</h2>
-        {team.members.map((member, idx) => (
-          <div key={idx} className="member">
-            <input
-              type="text"
-              value={member.name}
-              onChange={(e) => updateMember(idx, "name", e.target.value)}
-              placeholder="Name"
-            />
-            <select
-              value={member.role}
-              onChange={(e) => updateMember(idx, "role", e.target.value)}
-            >
-              <option value="OWNER">Owner</option>
-              <option value="CAPTAIN">Captain</option>
-              <option value="DRIVER">Driver</option>
-              <option value="TRAINER">Trainer</option>
-              <option value="HELPER">Helper</option>
-            </select>
-            <input
-              type="text"
-              value={member.info || ""}
-              onChange={(e) => updateMember(idx, "info", e.target.value)}
-              placeholder="Info"
-            />
-            <input
-              type="text"
-              value={member.phone || ""}
-              onChange={(e) => updateMember(idx, "phone", e.target.value)}
-              placeholder="Phone"
-            />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          {/* Header */}
+          <div className="bg-orange-600 px-6 py-4">
+            <h1 className="text-2xl font-bold text-white">My Profile</h1>
           </div>
-        ))}
+
+          <div className="p-6 space-y-8">
+            {/* User Details Section */}
+            <div className="border-b border-gray-200 pb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Personal Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Username
+                  </label>
+                  <p className="mt-1 text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
+                    {user?.username}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Mobile Number
+                  </label>
+                  <p className="mt-1 text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
+                    {user?.mobileNumber}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Change Password Section */}
+            <div className="border-b border-gray-200 pb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Security
+                </h2>
+                <button
+                  onClick={() => setShowChangePassword(!showChangePassword)}
+                  className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  {showChangePassword ? "Cancel" : "Change Password"}
+                </button>
+              </div>
+
+              {showChangePassword && (
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Current Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={changePasswordData.currentPassword}
+                      onChange={(e) =>
+                        setChangePasswordData((prev) => ({
+                          ...prev,
+                          currentPassword: e.target.value,
+                        }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      minLength="8"
+                      value={changePasswordData.newPassword}
+                      onChange={(e) =>
+                        setChangePasswordData((prev) => ({
+                          ...prev,
+                          newPassword: e.target.value,
+                        }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={changePasswordData.confirmPassword}
+                      onChange={(e) =>
+                        setChangePasswordData((prev) => ({
+                          ...prev,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={changingPassword}
+                    className="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {changingPassword
+                      ? "Changing Password..."
+                      : "Change Password"}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {/* Team Information Section */}
+            {team && (
+              <div className="border-b border-gray-200 pb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  My Team
+                </h2>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Team Name
+                    </label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {team.teamName}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bulls
+                    </label>
+                    <div className="space-y-2">
+                      {team.bulls.map((bull, index) => (
+                        <div
+                          key={index}
+                          className="bg-white p-3 rounded border"
+                        >
+                          <p className="font-medium">{bull.name}</p>
+                          <p className="text-sm text-gray-600">
+                            Category: {bull.category?.type} -{" "}
+                            {bull.category?.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Team Members
+                    </label>
+                    <div className="space-y-2">
+                      {team.teamMembers.map((member, index) => (
+                        <div
+                          key={index}
+                          className="bg-white p-3 rounded border"
+                        >
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-sm text-gray-600">
+                            Role: {member.role}
+                          </p>
+                          {member.info && (
+                            <p className="text-sm text-gray-600">
+                              Info: {member.info}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Status
+                    </label>
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        team.status === "APPROVED"
+                          ? "bg-green-100 text-green-800"
+                          : team.status === "PENDING"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {team.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!team && (
+              <div className="border-b border-gray-200 pb-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  My Team
+                </h2>
+                <div className="bg-gray-50 rounded-lg p-6 text-center">
+                  <p className="text-gray-600">
+                    You haven't created a team yet.
+                  </p>
+                  <button
+                    onClick={() => navigate("/bulls")}
+                    className="mt-4 bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+                  >
+                    Create Team
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+
+            {/* Messages */}
+            {message && (
+              <div
+                className={`p-4 rounded-md ${
+                  message.includes("success")
+                    ? "bg-green-50 text-green-800"
+                    : "bg-red-50 text-red-800"
+                }`}
+              >
+                {message}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-      <button onClick={handleSave} disabled={saving}>
-        {saving ? "Saving..." : "Save Changes"}
-      </button>
-      <button onClick={handleLogout}>Logout</button>
-      <button onClick={handleForgotPassword}>Forgot Password</button>
-      {message && <p>{message}</p>}
     </div>
   );
 };

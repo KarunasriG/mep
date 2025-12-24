@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../api/auth.api";
 import { verifyUser } from "../services/auth.service";
 
 const AuthContext = createContext(null);
@@ -24,25 +23,12 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  const logout = async () => {
-    try {
-      setLoading(true);
-      await api.post("/api/auth/logout");
-      setUser(null);
-    } catch (err) {
-      console.error("Logout failed", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
         user,
         isLogin: !!user,
         loading,
-        logout,
         checkAuth,
       }}
     >

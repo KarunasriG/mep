@@ -7,26 +7,88 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Refresh token promise to prevent multiple concurrent refresh attempts
+let isRefreshing = false;
+let failedQueue = [];
+let isRedirecting = false; // Prevent multiple redirects
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
 // Handle expired access token
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
-    console.log("Token expired, attempting refresh");
     const originalRequest = err.config;
 
-    if (err.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        await api.post("/api/auth/refresh");
-        return api(originalRequest); // retry original call
-      } catch {
-        // refresh failed → redirect to login
-        window.location.href = "/login";
-      }
+    // 1️⃣ If no response or not 401 → reject
+    if (!err.response || err.response.status !== 401) {
+      return Promise.reject(err);
     }
 
-    return Promise.reject(err);
+    // 2️⃣ Do NOT retry auth endpoints
+    if (
+      originalRequest.url.includes("/api/auth/login") ||
+      originalRequest.url.includes("/api/auth/register") ||
+      originalRequest.url.includes("/api/auth/refresh")
+    ) {
+      return Promise.reject(err);
+    }
+
+    // 3️⃣ Prevent infinite retry
+    if (originalRequest._retry) {
+      return Promise.reject(err);
+    }
+
+    // 4️⃣ Queue requests if refresh in progress
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then(() => api(originalRequest));
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      console.log("🔄 Access token expired, refreshing...");
+      const refreshResponse = await api.post("/api/auth/refresh");
+
+      // Dispatch custom event to notify AuthContext of successful refresh
+      window.dispatchEvent(
+        new CustomEvent("auth-refreshed", {
+          detail: { user: refreshResponse.data.data.user },
+        })
+      );
+
+      processQueue(null);
+      return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError);
+
+      console.log("❌ Refresh failed. Logging out.");
+
+      // Dispatch event to notify AuthContext of logout
+      window.dispatchEvent(new CustomEvent("auth-logout"));
+
+      if (!isRedirecting && window.location.pathname !== "/login") {
+        isRedirecting = true;
+        window.location.href = "/login";
+      }
+
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 
@@ -41,7 +103,7 @@ export const loginAPI = (data) => {
 };
 
 export const logoutAPI = () => {
-  return api.post(`/api/auth/logout`, {});
+  return api.post(`/api/auth/logout`);
 };
 
 export const forgotPasswordAPI = (mobileNumber) => {
@@ -50,4 +112,8 @@ export const forgotPasswordAPI = (mobileNumber) => {
 
 export const verifyUserAPI = () => {
   return api.get(`/api/auth/user`);
+};
+
+export const changePasswordAPI = (data) => {
+  return api.patch(`/api/auth/changePassword`, data);
 };
