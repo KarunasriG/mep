@@ -1,44 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import BullForm from "../components/BullForm";
+import { useTeams } from "../context/TeamContext";
+import CreateTeam from "../components/CreateTeam";
 
 const BullsPage = () => {
   const { isLogin } = useAuth();
+  const { teams, fetchTeamsOnce, refreshTeams, loading } = useTeams();
+
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState(null);
-  const [teams, setTeams] = useState([
-    {
-      teamName: "Thunder Bulls",
-      ownerName: "Rajesh Kumar",
-      bulls: [
-        { name: "Bull A", category: "senior" },
-        { name: "Bull B", category: "junior" },
-      ],
-      contact: "9876543210",
-      totalMembers: 5,
-    },
-    {
-      teamName: "Mighty Warriors",
-      ownerName: "Suresh Reddy",
-      bulls: [{ name: "Bull X", category: "senior" }],
-      contact: "9123456780",
-      totalMembers: 3,
-    },
-    {
-      teamName: "Power Bulls",
-      ownerName: "Krishna Murthy",
-      bulls: [
-        { name: "Bull C", category: "senior" },
-        { name: "Bull D", category: "junior" },
-        { name: "Bull E", category: "junior" },
-      ],
-      contact: "8765432109",
-      totalMembers: 4,
-    },
-  ]);
 
-  const addTeam = (team) => {
-    setTeams((p) => [...p, team]);
+  useEffect(() => {
+    fetchTeamsOnce();
+    console.log(teams);
+  }, [fetchTeamsOnce]);
+
+  if (loading) return <p>Loading...</p>;
+
+  const getOwnerName = (team) =>
+    team?.teamMembers?.find((m) => m.role === "OWNER")?.name || "-";
+
+  const handleTeamCreated = async () => {
+    await refreshTeams(); // ✅ sync with backend
     setShowForm(false);
   };
 
@@ -68,38 +51,47 @@ const BullsPage = () => {
           </thead>
 
           <tbody className="divide-y">
-            {teams.map((team, i) => (
+            {teams.map((team) => (
               <>
-                <tr key={i}>
+                <tr key={team._id}>
                   <td className="px-4 py-3 font-medium">{team.teamName}</td>
-                  <td className="px-4 py-3">{team.ownerName}</td>
-                  <td className="px-4 py-3">{team.bulls.length}</td>
+                  <td className="px-4 py-3">{getOwnerName(team)}</td>
+                  <td className="px-4 py-3">{team.bullPairs?.length ?? 0}</td>
                   <td className="px-4 py-3 text-right">
                     <button
-                      onClick={() => setExpanded(expanded === i ? null : i)}
+                      onClick={() =>
+                        setExpanded(expanded === team._id ? null : team._id)
+                      }
                       className="text-orange-600 font-medium"
                     >
-                      {expanded === i ? "Hide" : "View"}
+                      {expanded === team._id ? "Hide" : "View"}
                     </button>
                   </td>
                 </tr>
 
-                {expanded === i && (
+                {expanded === team._id && (
                   <tr>
-                    <td colSpan="4" className="bg-gray-50 px-6 py-4">
-                      <ul className="space-y-2">
-                        {team.bulls.map((b, idx) => (
-                          <li
-                            key={idx}
-                            className="flex justify-between border rounded-lg px-4 py-2"
-                          >
-                            <span>{b.name}</span>
-                            <span className="text-xs bg-gray-200 px-2 py-1 rounded">
-                              {b.category}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
+                    <td colSpan={4} className="bg-gray-50 px-6 py-4">
+                      {Array.isArray(team.bullPairs) &&
+                      team.bullPairs.length > 0 ? (
+                        <ul className="space-y-2">
+                          {team.bullPairs.map((pair, idx) => (
+                            <li key={pair._id || idx}>
+                              <span className="font-medium">
+                                {pair?.bullA?.name ?? "Unknown Bull"}
+                              </span>{" "}
+                              &{" "}
+                              <span className="font-medium">
+                                {pair?.bullB?.name ?? "Unknown Bull"}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          No bulls registered for this team
+                        </p>
+                      )}
                     </td>
                   </tr>
                 )}
@@ -110,8 +102,13 @@ const BullsPage = () => {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <BullForm onSubmit={addTeam} onCancel={() => setShowForm(false)} />
+        <div className="fixed inset-0 z-50 bg-black/40 overflow-y-auto">
+          <div className="min-h-screen flex items-start justify-center py-10">
+            <CreateTeam
+              onSuccess={handleTeamCreated}
+              onCancel={() => setShowForm(false)}
+            />
+          </div>
         </div>
       )}
     </div>

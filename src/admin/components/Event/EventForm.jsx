@@ -3,23 +3,23 @@ import { Save, X } from "lucide-react";
 
 export default function EventForm({ initialData, onSubmit, onClose }) {
   const [formData, setFormData] = useState({
-    name: "",
-    date: "",
+    title: "",
+    description: "",
     location: "",
-    maxParticipants: "",
-    prizeAmount: "",
-    status: "upcoming",
+    from: "",
+    to: "",
+    prizeMoney: "",
   });
 
   useEffect(() => {
     if (initialData) {
       setFormData({
-        name: initialData.name,
-        date: initialData.date,
+        title: initialData.title,
+        description: initialData.description || "",
         location: initialData.location,
-        maxParticipants: initialData.maxParticipants.toString(),
-        prizeAmount: initialData.prizeAmount,
-        status: initialData.status,
+        from: initialData.timings.from.slice(0, 16),
+        to: initialData.timings.to.slice(0, 16),
+        prizeMoney: initialData.prizeMoney,
       });
     }
   }, [initialData]);
@@ -27,129 +27,125 @@ export default function EventForm({ initialData, onSubmit, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
-      name: formData.name,
-      date: formData.date,
+      title: formData.title,
+      description: formData.description,
       location: formData.location,
-      maxParticipants: parseInt(formData.maxParticipants),
-      prizeAmount: formData.prizeAmount,
-      status: formData.status,
+      timings: {
+        from: new Date(formData.from),
+        to: new Date(formData.to),
+      },
+      prizeMoney: Number(formData.prizeMoney),
     });
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h3 className="text-gray-900">
-            {initialData ? "Edit Event" : "Add New Event"}
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white w-full max-w-2xl rounded-lg shadow-lg">
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {initialData ? "Edit Event" : "Create Event"}
           </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded">
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-gray-700 mb-2">Event Name</label>
+            <label className="block text-sm text-gray-600 mb-1">Title</label>
             <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
               className="input"
-              placeholder="Enter event name"
+              required
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">
+              Description
+            </label>
+            <textarea
+              className="input min-h-[80px]"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Location</label>
+            <input
+              className="input"
+              required
+              value={formData.location}
+              onChange={(e) =>
+                setFormData({ ...formData, location: e.target.value })
+              }
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 mb-2">Date</label>
-              <input
-                type="date"
-                required
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
-                className="input"
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 mb-2">Location</label>
-              <input
-                type="text"
-                required
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                className="input"
-                placeholder="Enter location"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-700 mb-2">
-                Max Participants
+              <label className="block text-sm text-gray-600 mb-1">
+                Start Time
               </label>
               <input
-                type="number"
-                required
-                min="1"
-                value={formData.maxParticipants}
-                onChange={(e) =>
-                  setFormData({ ...formData, maxParticipants: e.target.value })
-                }
+                type="datetime-local"
                 className="input"
+                required
+                value={formData.from}
+                onChange={(e) =>
+                  setFormData({ ...formData, from: e.target.value })
+                }
               />
             </div>
 
             <div>
-              <label className="block text-gray-700 mb-2">Prize Amount</label>
+              <label className="block text-sm text-gray-600 mb-1">
+                End Time
+              </label>
               <input
-                type="text"
-                required
-                value={formData.prizeAmount}
-                onChange={(e) =>
-                  setFormData({ ...formData, prizeAmount: e.target.value })
-                }
+                type="datetime-local"
                 className="input"
-                placeholder="e.g., ₹5,00,000"
+                required
+                value={formData.to}
+                onChange={(e) =>
+                  setFormData({ ...formData, to: e.target.value })
+                }
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-gray-700 mb-2">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) =>
-                setFormData({ ...formData, status: e.target.value })
-              }
+            <label className="block text-sm text-gray-600 mb-1">
+              Prize Money (₹)
+            </label>
+            <input
+              type="number"
+              min="0"
               className="input"
-            >
-              <option value="upcoming">Upcoming</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="completed">Completed</option>
-            </select>
+              required
+              value={formData.prizeMoney}
+              onChange={(e) =>
+                setFormData({ ...formData, prizeMoney: e.target.value })
+              }
+            />
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button type="submit" className="btn-primary flex-1">
-              <Save className="w-5 h-5" />
-              {initialData ? "Update Event" : "Create Event"}
-            </button>
-
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <button type="button" onClick={onClose} className="btn-secondary">
               Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              <Save className="w-4 h-4" />
+              {initialData ? "Update Event" : "Create Event"}
             </button>
           </div>
         </form>

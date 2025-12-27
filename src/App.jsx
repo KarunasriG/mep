@@ -7,25 +7,25 @@ import {
 } from "react-router-dom";
 import { useState, useEffect } from "react";
 
+import Login from "./Pages/auth/Login";
+import Register from "./Pages/auth/Register";
+import Choice from "./pages/auth/Choice";
+
+import HomePage from "./Pages/HomePage";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
 
 // user pages
 import DashboardPage from "./Pages/DashboardPage";
-import TeamsPage from "./pages/TeamsPage";
-import BullsPage from "./pages/BullsPage";
-// import GenericPage from "./pages/GenericPage";
-
-import Choice from "./pages/auth/Choice";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-
-import HomePage from "./Pages/HomePage";
+import TeamsPage from "./Pages/TeamsPage";
+import BullsPage from "./Pages/BullsPage";
+import TeamDetailsPage from "./Pages/TeamDetailsPage";
+import DriversPage from "./Pages/DriversPage";
+import ProfilePage from "./Pages/ProfilePage";
 
 // admin pages
 import Dashboard from "./admin/pages/DashboardLayout";
-import Layout from "./admin/components/Layout/Layout";
-import UserApprovals from "./admin/pages/UserApprovals";
+import TeamApproval from "./admin/pages/TeamApproval";
 import EventManagement from "./admin/pages/EventManagement";
 import ChampionManagement from "./admin/pages/ChampionManagment";
 import ActiveTeams from "./admin/pages/ActiveTeams";
@@ -33,8 +33,9 @@ import TeamDetails from "./admin/components/ActiveTeams/TeamDetails";
 import Home from "./admin/pages/HomePage";
 
 import { useAuth } from "./context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
+import { ShimmerTable } from "./components/ShimmerEffect";
 
 const GenericPage = ({ title, loading }) => {
   if (loading) return <ShimmerTable />;
@@ -77,30 +78,23 @@ function UserLayout({ children, mobileMenuOpen, setMobileMenuOpen }) {
 ------------------------- */
 
 function AdminRoutes() {
-  const navigate = useNavigate();
   return (
     <Routes>
-      <Route element={<Dashboard />}>
-        <Route index element={<Navigate to="users" replace />} />
-        <Route path="/admin/users" element={<UserApprovals />} />
-        <Route path="/admin/events" element={<EventManagement />} />
-        <Route path="/admin/champions" element={<ChampionManagement />} />
-        <Route
-          path="/admin/teams"
-          element={
-            <ActiveTeams
-              onNavigateToTeamDetails={(id) =>
-                navigate(`/admin/teams-details/${id}`)
-              }
-              onBack={() => navigate("/admin/home")}
-            />
-          }
-        />
-        <Route path="/admin/teams-details/:id" element={<TeamDetails />} />
-        <Route
-          path="/admin/home"
-          element={<Home onNavigateToTeams={() => navigate("/admin/teams")} />}
-        />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute roles={["admin"]}>
+            <Dashboard />{" "}
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="home" replace />} />
+        <Route path="users" element={<TeamApproval />} />
+        <Route path="events" element={<EventManagement />} />
+        <Route path="champions" element={<ChampionManagement />} />
+        <Route path="teams" element={<ActiveTeams />} />
+        <Route path="teams-details/:id" element={<TeamDetails />} />
+        <Route path="home" element={<Home />} />
       </Route>
     </Routes>
   );
@@ -136,6 +130,10 @@ function AppContent() {
             <Route path="/auth" element={<Choice />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route
+              path="/unauthorized"
+              element={<div>Unauthorized Access</div>}
+            />
           </Routes>
         </PublicLayout>
       )}
@@ -155,7 +153,7 @@ function AppContent() {
 
             <Route
               path="/drivers"
-              element={<GenericPage title="Drivers" loading={loading} />}
+              element={<DriversPage loading={loading} />}
             />
             <Route
               path="/events"
@@ -164,6 +162,18 @@ function AppContent() {
             <Route
               path="/statistics"
               element={<GenericPage title="Statistics" loading={loading} />}
+            />
+            <Route
+              path="/teams/:id"
+              element={<TeamDetailsPage loading={loading} />}
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage loading={loading} />
+                </ProtectedRoute>
+              }
             />
           </Routes>
         </UserLayout>

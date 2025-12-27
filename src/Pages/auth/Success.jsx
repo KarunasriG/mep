@@ -5,7 +5,8 @@ import { motion } from "motion/react";
 import { Phone, Lock, ArrowRight } from "lucide-react";
 
 export default function Login() {
-  const { mobile, setMobile, password, setPassword, setIsLogin } = useAuth();
+  const { mobileNumber, setMobileNumber, password, setPassword, setIsLogin } =
+    useAuth();
   const navigate = useNavigate();
 
   const [error, setError] = useState("");
@@ -17,7 +18,7 @@ export default function Login() {
     const savedMobile = localStorage.getItem("reg_mobile");
     const savedPassword = localStorage.getItem("reg_password");
 
-    if (mobile !== savedMobile || password !== savedPassword) {
+    if (mobileNumber !== savedMobile || password !== savedPassword) {
       setError("Invalid mobile number or password.");
       return;
     }
@@ -62,8 +63,8 @@ export default function Login() {
                 whileFocus={{ scale: 1.02 }}
                 type="tel"
                 maxLength={10}
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
                 className="w-full bg-amber-900/50 border-2 rounded-2xl pl-12 py-4 text-amber-100"
               />
             </div>
